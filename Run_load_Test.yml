@@ -1,0 +1,78 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger: none
+
+jobs:
+  - job: Test
+    timeoutInMinutes: 360
+    cancelTimeoutInMinutes: 3
+    pool: 'Agent_Pool_Name'
+    steps :
+
+    - task: CmdLine@2
+      inputs:
+        script: sed -i 's/USERNAME/$(USERNAME)/g' users.csv
+        workingDirectory: $(Build.SourcesDirectory)/TestFiles
+      displayName: Inserting Credentials
+
+    - task: CmdLine@2
+      inputs:
+        script: sed -i 's/PASSWORD/$(PASSWORD)/g' users.csv
+        workingDirectory: $(Build.SourcesDirectory)/TestFiles
+      displayName: Inserting Credentials
+    
+    - task: CmdLine@2
+      inputs:
+        script: sed -i 's/PARALLELUSERS/$(PARALLELUSERS)/g' Test.jmx
+        workingDirectory: $(Build.SourcesDirectory)/TestFiles
+      displayName: Setting Number of Users
+
+    - task: CmdLine@2
+      inputs:
+        script: sed -i 's/LOADDURATION/$(LOADDURATION)/g' Test.jmx
+        workingDirectory: $(Build.SourcesDirectory)/TestFiles
+      displayName: Setting Load Duration
+
+    - task: CmdLine@2
+      inputs:
+        script: sed -i 's/RAMPUPTIME/$(RAMPUPTIME)/g' Test.jmx
+        workingDirectory: $(Build.SourcesDirectory)/TestFiles
+      displayName: Setting Ramp Up Time
+
+    - task: CmdLine@2
+      inputs:
+        script: sed -i 's/SHUTDOWNTIME/$(SHUTDOWNTIME)/g' Test.jmx
+        workingDirectory: $(Build.SourcesDirectory)/TestFiles
+      displayName: Setting Tear Down Time
+
+
+    - task: CmdLine@2
+      inputs:
+        script: sh build.sh
+        workingDirectory: $(Build.SourcesDirectory)/TestFiles
+      displayName: Run Load test
+
+
+    - task: CmdLine@2
+      inputs: 
+        script: python Junit_Converter.py LoadReports/results.jtl LoadReports/Junit.xml
+        workingDirectory: $(Build.SourcesDirectory)/TestFiles
+      displayName: Convert to Junit
+
+
+    - task: PublishTestResults@2
+      displayName: 'Publish Load Test Results'
+      inputs:
+        testResultsFormat: 'JUnit'
+        testResultsFiles: '$(Build.SourcesDirectory)/TestFiles/LoadReports/Junit.xml'
+        failTaskOnFailedTests: false
+
+    - task: PublishBuildArtifacts@1
+      displayName: "Publish load test Artifacts"
+      inputs:
+       pathToPublish: '$(Build.SourcesDirectory)/TestFiles/LoadReports/'
+      condition: always()
+
