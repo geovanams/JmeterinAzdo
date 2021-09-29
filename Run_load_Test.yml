@@ -10,7 +10,7 @@ jobs:
     timeoutInMinutes: 360
     cancelTimeoutInMinutes: 3
     pool: 
-      vmImage: windows-2019
+      vmImage: ubuntu-20.04
       demands:
         - npm
     steps :
